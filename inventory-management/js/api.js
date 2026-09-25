@@ -9,7 +9,7 @@ async function apiCall(endpoint, method = 'GET', data = null) {
                 headers: { 'Content-Type': 'application/json' }
             };
             if (data) options.body = JSON.stringify(data);
-            
+
             const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
             return await response.json();
         } else {
@@ -23,64 +23,70 @@ async function apiCall(endpoint, method = 'GET', data = null) {
 
 function simulateApiCall(endpoint, method, data) {
     console.log(`[SIMULATED] ${method} ${endpoint}`);
-    
+
     if (endpoint === '/products' && method === 'GET') {
         return Promise.resolve(appState.products);
     }
-    
+
     if (endpoint === '/products' && method === 'POST') {
         const product = { id: generateId(), ...data, dateAdded: new Date().toISOString() };
         appState.products.push(product);
         saveProducts();
         return Promise.resolve(product);
     }
-    
+
     if (endpoint === '/stock/buy' && method === 'POST') {
         const product = appState.products.find(p => p.id === data.productId);
         if (product) {
             product.currentStock += data.quantity;
             saveProducts();
         }
-        
+
         const transaction = { id: generateId(), type: 'BUY', ...data, date: new Date().toISOString() };
         appState.transactions.push(transaction);
         saveTransactions();
         return Promise.resolve(transaction);
     }
-    
-    if (endpoint === '/stock/sell' && method === 'POST') {
-        const product = appState.products.find(p => p.id === data.productId);
-        if (!product || product.currentStock < data.quantity) {
-            return Promise.reject(new Error('Insufficient stock'));
-        }
-        
-        product.currentStock -= data.quantity;
-        saveProducts();
-        
-        const transaction = { id: generateId(), type: 'SALE', ...data, date: new Date().toISOString() };
-        appState.transactions.push(transaction);
-        saveTransactions();
-        return Promise.resolve(transaction);
-    }
-    
+
+    // ==================== CHECKOUT — SINGLE SOURCE OF TRUTH FOR SALES ====================
+    // Handles single OR multiple items from the cart. For each item:
+    //   1. Reduces product stock
+    //   2. Creates a SALE transaction (so it shows correctly in Alerts,
+    //      Recent Transactions, and Reports/Charts)
+    // Then saves a receipt for the bill.
     if (endpoint === '/checkout/complete' && method === 'POST') {
         data.items.forEach(item => {
             const product = appState.products.find(p => p.id === item.productId);
-            if (product) product.currentStock -= item.quantity;
+            if (product) {
+                product.currentStock -= item.quantity;
+            }
+
+            const transaction = {
+                id: generateId(),
+                type: 'SALE',
+                productId: item.productId,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                totalAmount: item.unitPrice * item.quantity,
+                date: new Date().toISOString()
+            };
+            appState.transactions.push(transaction);
         });
+
         saveProducts();
-        
+        saveTransactions();
+
         const receipt = { id: generateId(), ...data, date: new Date().toISOString() };
         appState.receipts.push(receipt);
         localStorage.setItem('receipts', JSON.stringify(appState.receipts));
         return Promise.resolve(receipt);
     }
-    
+
     if (endpoint === '/alerts/low-stock') {
         const lowStock = appState.products.filter(p => p.currentStock < p.minReorderLevel);
         return Promise.resolve(lowStock);
     }
-    
+
     return Promise.resolve({ success: true });
 }
 
@@ -113,10 +119,6 @@ async function recordPurchase(stockData) {
     return await apiCall('/stock/buy', 'POST', stockData);
 }
 
-async function recordSale(stockData) {
-    return await apiCall('/stock/sell', 'POST', stockData);
-}
-
 async function completeCheckout(checkoutData) {
     return await apiCall('/checkout/complete', 'POST', checkoutData);
 }
@@ -132,7 +134,7 @@ async function getRecentTransactions(limit = 10) {
 async function getTopSellingItems(limit = 5) {
     const sales = appState.transactions.filter(t => t.type === 'SALE');
     const productSales = {};
-    
+
     sales.forEach(sale => {
         if (!productSales[sale.productId]) {
             productSales[sale.productId] = { productId: sale.productId, quantity: 0, amount: 0 };
@@ -140,7 +142,7 @@ async function getTopSellingItems(limit = 5) {
         productSales[sale.productId].quantity += sale.quantity;
         productSales[sale.productId].amount += sale.totalAmount;
     });
-    
+
     return Object.values(productSales)
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, limit)
@@ -153,13 +155,13 @@ async function getTopSellingItems(limit = 5) {
 async function getSalesReport() {
     const today = new Date().toDateString();
     const todaySales = appState.transactions.filter(t => t.type === 'SALE' && new Date(t.date).toDateString() === today);
-    
+
     let totalSales = 0, totalItems = 0;
     todaySales.forEach(sale => {
         totalSales += sale.totalAmount;
         totalItems += sale.quantity;
     });
-    
+
     return Promise.resolve({
         totalSales: totalSales,
         itemsSold: totalItems,
@@ -171,7 +173,7 @@ async function getSalesReport() {
 async function getSalesByCategory() {
     const sales = appState.transactions.filter(t => t.type === 'SALE');
     const categorySales = {};
-    
+
     sales.forEach(sale => {
         const product = appState.products.find(p => p.id === sale.productId);
         if (product) {
@@ -182,6 +184,6 @@ async function getSalesByCategory() {
             categorySales[product.category].quantity += sale.quantity;
         }
     });
-    
+
     return Promise.resolve(Object.values(categorySales));
 }

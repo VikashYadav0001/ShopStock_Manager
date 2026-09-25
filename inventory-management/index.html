@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Management System</title>
+    <title>ShopStock Manager</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -15,7 +15,7 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fas fa-warehouse"></i>
-                    <h2>InvMGMT</h2>
+                    <h2>ShopStock</h2>
                 </div>
             </div>
 
@@ -62,12 +62,6 @@
                 </ul>
             </nav>
 
-            <div class="sidebar-footer">
-                <a href="#settings" class="nav-link">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </a>
-            </div>
         </aside>
 
         <!-- MAIN CONTENT -->
@@ -251,13 +245,13 @@
                     </div>
                 </div>
 
-                <!-- STOCK ENTRY PAGE -->
+                <!-- STOCK ENTRY PAGE (RESTOCK ONLY — sale ab sirf Checkout se hoti hai) -->
                 <div class="page" id="page-stock-entry" style="display:none;">
                     <div class="page-header">
                         <h2>Stock Entry</h2>
                     </div>
 
-                    <div class="stock-entry-container">
+                    <div class="stock-entry-container" style="grid-template-columns: 1fr; max-width: 550px; margin: 0 auto;">
                         <!-- RESTOCK (INCOMING) -->
                         <div class="stock-section">
                             <div class="section-header">
@@ -296,51 +290,11 @@
                                 <button type="submit" class="btn-primary">Record Purchase</button>
                             </form>
                         </div>
-
-                        <!-- SALE (OUTGOING) -->
-                        <div class="stock-section">
-                            <div class="section-header">
-                                <i class="fas fa-arrow-up" style="color: #e74c3c;"></i>
-                                <h3>Sale (Outgoing)</h3>
-                            </div>
-
-                            <form id="sale-form" class="stock-form">
-                                <div class="form-group">
-                                    <label>Select Product *</label>
-                                    <select id="sale-product" required>
-                                        <option value="">Choose product...</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Quantity *</label>
-                                    <input type="number" id="sale-qty" placeholder="5" min="1" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Available Stock</label>
-                                    <input type="number" id="sale-available-stock" readonly>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Unit Price (₹)</label>
-                                    <input type="number" id="sale-price" readonly>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Total Amount (₹)</label>
-                                    <input type="number" id="sale-total-amount" readonly>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Customer/Notes</label>
-                                    <input type="text" id="sale-notes" placeholder="Optional">
-                                </div>
-
-                                <button type="submit" class="btn-primary">Record Sale</button>
-                            </form>
-                        </div>
                     </div>
+
+                    <p style="text-align:center; color:#888; font-size:13px; margin-top:20px;">
+                        <i class="fas fa-info-circle"></i> Sale record karne ke liye <strong>Checkout</strong> page use karo — single ya multiple items, bill bhi generate hoga.
+                    </p>
                 </div>
 
                 <!-- CHECKOUT PAGE -->
@@ -663,13 +617,12 @@
                 <input type="number" id="edit-product-price" min="0" step="0.01" required>
             </div>
             <div class="form-group">
-                <label>Current Stock *</label>
-                <input type="number" id="edit-product-stock" min="0" required>
-            </div>
-            <div class="form-group">
                 <label>Min Reorder Level *</label>
                 <input type="number" id="edit-product-min-level" min="0" required>
             </div>
+            <p style="font-size:12px; color:#888; margin-top:-8px; margin-bottom:15px;">
+                <i class="fas fa-info-circle"></i> Stock update karne ke liye <strong>Stock Entry</strong> page pe jao (Restock section).
+            </p>
             <button type="submit" class="btn-primary">Save Changes</button>
         </form>
     </div>

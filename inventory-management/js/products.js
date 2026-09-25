@@ -123,7 +123,7 @@ async function displayAllProducts() {
     });
 }
 
-// ==================== EDIT PRODUCT (MODAL) ====================
+// ==================== EDIT PRODUCT (MODAL) — STOCK NOT EDITABLE HERE ====================
 async function editProduct(productId) {
     const products = await getAllProducts();
     const product = products.find(p => p.id === productId);
@@ -137,8 +137,8 @@ async function editProduct(productId) {
     document.getElementById('edit-product-name').value = product.productName;
     document.getElementById('edit-product-category').value = product.category;
     document.getElementById('edit-product-price').value = product.unitPrice;
-    document.getElementById('edit-product-stock').value = product.currentStock;
     document.getElementById('edit-product-min-level').value = product.minReorderLevel;
+    // Stock field intentionally not populated/edited here.
 
     document.getElementById('edit-product-modal').style.display = 'flex';
 }
@@ -154,7 +154,6 @@ async function handleEditProductSubmit(e) {
     const updatedName = document.getElementById('edit-product-name').value.trim();
     const updatedCategory = document.getElementById('edit-product-category').value;
     const updatedPrice = parseFloat(document.getElementById('edit-product-price').value);
-    const updatedStock = parseInt(document.getElementById('edit-product-stock').value);
     const updatedMinLevel = parseInt(document.getElementById('edit-product-min-level').value);
 
     if (!updatedName || !updatedCategory) {
@@ -162,8 +161,8 @@ async function handleEditProductSubmit(e) {
         return;
     }
 
-    if (isNaN(updatedPrice) || updatedPrice < 0 || isNaN(updatedStock) || updatedStock < 0 || isNaN(updatedMinLevel) || updatedMinLevel < 0) {
-        showMessage('Price/Stock/Min Level valid numbers hone chahiye', 'error');
+    if (isNaN(updatedPrice) || updatedPrice < 0 || isNaN(updatedMinLevel) || updatedMinLevel < 0) {
+        showMessage('Price/Min Level valid numbers hone chahiye', 'error');
         return;
     }
 
@@ -181,7 +180,6 @@ async function handleEditProductSubmit(e) {
             productName: updatedName,
             category: updatedCategory,
             unitPrice: updatedPrice,
-            currentStock: updatedStock,
             minReorderLevel: updatedMinLevel
         });
 
@@ -234,7 +232,7 @@ async function deleteProductConfirm(productId) {
     }
 }
 
-// ==================== DROPDOWNS (unchanged) ====================
+// ==================== DROPDOWNS (sale-product dropdown removed — sale ab sirf Checkout se) ====================
 async function populateProductDropdowns() {
     const products = await getAllProducts();
 
@@ -250,22 +248,6 @@ async function populateProductDropdowns() {
         if (!restockSelect.dataset.listenerAttached) {
             restockSelect.addEventListener('change', handleRestockProductSelect);
             restockSelect.dataset.listenerAttached = 'true';
-        }
-    }
-
-    const saleSelect = document.getElementById('sale-product');
-    if (saleSelect) {
-        saleSelect.innerHTML = '<option value="">Choose product...</option>';
-        products.forEach(product => {
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = `${product.productName} (Stock: ${product.currentStock}, ₹${product.unitPrice})`;
-            option.disabled = product.currentStock <= 0;
-            saleSelect.appendChild(option);
-        });
-        if (!saleSelect.dataset.listenerAttached) {
-            saleSelect.addEventListener('change', handleSaleProductSelect);
-            saleSelect.dataset.listenerAttached = 'true';
         }
     }
 
@@ -292,19 +274,5 @@ async function handleRestockProductSelect(e) {
     if (product) {
         document.getElementById('restock-cost').value = product.unitPrice;
         updateRestockTotal();
-    }
-}
-
-async function handleSaleProductSelect(e) {
-    const productId = e.target.value;
-    if (!productId) return;
-
-    const products = await getAllProducts();
-    const product = products.find(p => p.id === productId);
-
-    if (product) {
-        document.getElementById('sale-available-stock').value = product.currentStock;
-        document.getElementById('sale-price').value = product.unitPrice;
-        updateSaleTotal();
     }
 }
